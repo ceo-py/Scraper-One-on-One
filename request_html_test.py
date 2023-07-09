@@ -1,13 +1,25 @@
 from requests_html import HTMLSession, HTML
 
+from json_details_page import create_pizza_json
+
 type_dict = {
-    1: 'Сосове',
-    2: 'Сирена',
+    1: 'sauce',
+    2: 'cheese',
     3: '',
-    4: 'Меса',
-    5: 'Зеленчуци',
-    6: 'Подправки',
+    4: 'meats',
+    5: 'vegetables',
+    6: 'spices',
 }
+
+
+def ingredient():
+    return {
+        "spices": [],
+        "meats": [],
+        "vegetables": [],
+        "cheese": [],
+        "sauce": []
+    }
 
 
 def open_web_site(URL, timer=5):
@@ -51,12 +63,17 @@ def scrape_general_information(r_html):
 def get_dough_picture_and_size(item, item_pic, data):
     size = item.attrs['id'].split('_')[-1]
 
+    return_data = []
     for key in data.keys():
         if size in data[key]['Снимка големина']:
-            data[key][item.attrs['title']] = {}
-            data[key][item.attrs['title']]['Цена'] = item.attrs['price'].strip()
-            data[key][item.attrs['title']]['Описание'] = item.attrs['description'].strip()
-            data[key][item.attrs['title']]['Продукт Снимка'] = f"https://www.dominos.bg{item_pic.attrs['src']}"
+            return_data.append({
+                "type": key,
+                "picture": f"https://www.dominos.bg{item_pic.attrs['src']}",
+                "description": item.attrs['description'].strip(),
+                "price": float(item.attrs['price'].strip())
+            })
+
+            return return_data
 
 
 def scrape_product_details(r_html):
@@ -77,17 +94,29 @@ def scrape_product_details(r_html):
     product_price = r_html.find('.product-total-price', first=True).text
     all_toppings_list = r_html.find('.white-txt li .single-topping')
     extra = r_html.find('.white-txt li .double input')
+    price = float(r_html.find('.Price_Sum')[0].text)
+
 
     data_gather[pizza_title] = {x.attrs['alt']: {'Снимка големина': "https://www.dominos.bg" + x.attrs['src']} for x in
                                 sizes}
-
+    dough_info = []
     for x in range(len(main_data)):
-        get_dough_picture_and_size(main_data[x], dough_pic_url[x], data_gather[pizza_title])
+        dough_info.append(get_dough_picture_and_size(main_data[x], dough_pic_url[x], data_gather[pizza_title]))
 
-    show_details(data_gather, pizza_title, all_toppings_list, products, pizza_picture, product_price)
+    show_details(data_gather, pizza_title, all_toppings_list, products, pizza_picture, product_price, dough_info,
+                 all_toppings_list, price)
 
 
-def show_details(data_gather, pizza_title, all_toppings_list, products, pizza_picture, product_price):
+def toppings(all_toppings_list):
+    data = ingredient()
+    for x in all_toppings_list:
+        if x.attrs['t_type'] != 'hidden':
+            data[type_dict[int(x.attrs['t_type'].strip())]] += [x.attrs['tname'].strip()]
+    return data
+
+
+def show_details(data_gather, pizza_title, all_toppings_list, products, pizza_picture, product_price, dough_info,
+                 toppings_data, price):
     data_gather[pizza_title]['Продукти'] = [x.text for x in products]
     data_gather[pizza_title]['Продукт Снимка'] = pizza_picture
 
@@ -101,7 +130,13 @@ def show_details(data_gather, pizza_title, all_toppings_list, products, pizza_pi
             print(f"{x.attrs['tname'].strip()} - {type_dict[int(x.attrs['t_type'].strip())]}")
 
     print(product_price)
-
+    print(toppings(toppings_data))
+    create_pizza_json(
+        product_name=pizza_title.strip(),
+        product_picture=pizza_picture, dough_types=dough_info,
+        ingredients=[x.text for x in products],
+        ingredient_groups=toppings(toppings_data),
+        price=price)
 
 # scrape_general_information(open_web_site(URL))
 

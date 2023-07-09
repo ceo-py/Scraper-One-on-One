@@ -10,7 +10,7 @@ from request_html_test import scrape_general_information, scrape_product_details
 options = Options()
 options.add_argument('--headless')
 PATH = r"D:\PyCharm\Scraper-One-on-One\selenium-driver\chromedriver.exe"
-url = 'https://www.dominos.bg/menu/sofia-pavlovo#pizzas'
+url = 'https://www.dominos.bg/menu/sofia-pavlovo#sandwich'
 # url = 'https://www.dominos.bg/menu/sofia-pavlovo#pasta'
 driver = webdriver.Chrome()
 
@@ -30,10 +30,10 @@ def pasta_range():
     return range(1, 6)
 
 
-for x in pizza_range():
+for x in range(1 ,6):
     try:
-        element = driver.find_element(By.XPATH, f'//*[@id="1"]/div[2]/div/div[{x}]/div[2]')  # pizza
-        # element = driver.find_element(By.XPATH, f'//*[@id="3"]/div[2]/div/div[{x}]/div[2]') # pasta
+        # element = driver.find_element(By.XPATH, f'//*[@id="1"]/div[2]/div/div[{x}]/div[2]')  # pizza
+        element = driver.find_element(By.XPATH, f'//*[@id="9"]/div[2]/div/div[{x}]/div[2]')
         element.click()
         time.sleep(2)
 
